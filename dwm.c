@@ -340,6 +340,10 @@ applysizehints(Client *c, int *x, int *y, int *w, int *h, int interact)
 	int baseismin;
 	Monitor *m = c->mon;
 
+	// return 1 if layout is monocle
+	if (&monocle == c->mon->lt[c->mon->sellt]->arrange)
+		return 1;
+
 	/* set minimum possible */
 	*w = MAX(1, *w);
 	*h = MAX(1, *h);
@@ -755,6 +759,7 @@ drawbar(Monitor *m)
 
 	if (!m->showbar)
 		return;
+	
 
 	/* draw status first so it can be overdrawn by tags later */
 	if (m == selmon) { /* status is only drawn on selected monitor */
@@ -1390,6 +1395,13 @@ resizeclient(Client *c, int x, int y, int w, int h)
 	c->oldw = c->w; c->w = wc.width = w;
 	c->oldh = c->h; c->h = wc.height = h;
 	wc.border_width = c->bw;
+	if ((&monocle == c->mon->lt[c->mon->sellt]->arrange) 
+			/* && (!c->isfloating)) */ 
+		){ 
+		wc.border_width = 0;
+		c->w = wc.width += c->bw * 2;
+		c->h = wc.height += c->bw * 2;
+	}
 	XConfigureWindow(dpy, c->win, CWX|CWY|CWWidth|CWHeight|CWBorderWidth, &wc);
 	configure(c);
 	XSync(dpy, False);
@@ -1617,7 +1629,15 @@ setlayout(const Arg *arg)
 	if (!arg || !arg->v || arg->v != selmon->lt[selmon->sellt])
 		selmon->sellt ^= 1;
 	if (arg && arg->v)
+	{
 		selmon->lt[selmon->sellt] = (Layout *)arg->v;
+		Arg tmp;
+		if (((Layout *)arg->v)->arrange == &monocle)
+			tmp.i = 0;
+		else
+			tmp.i = 1;
+		togglebar(&tmp);
+	}
 	strncpy(selmon->ltsymbol, selmon->lt[selmon->sellt]->symbol, sizeof selmon->ltsymbol);
 	if (selmon->sel)
 		arrange(selmon);
@@ -1857,8 +1877,11 @@ tile(Monitor *m)
 
 void
 togglebar(const Arg *arg)
-{
-	selmon->showbar = !selmon->showbar;
+{	
+	if (arg)
+		selmon->showbar = arg->i;
+	else
+		selmon->showbar = !selmon->showbar;
 	updatebarpos(selmon);
 	XMoveResizeWindow(dpy, selmon->barwin, selmon->wx + sp, selmon->by + vp, selmon->ww - 2 * sp, bh);
 	arrange(selmon);
