@@ -12,15 +12,21 @@ static const int showbar            = 1;        /* 0 means no bar */
 static const int topbar             = 1;        /* 0 means bottom bar */
 static const char *fonts[]          = { "monospace:size=10" };
 static const char dmenufont[]       = "monospace:size=10";
-static const char col_gray1[]       = "#222222";
-static const char col_gray2[]       = "#444444";
-static const char col_gray3[]       = "#bbbbbb";
-static const char col_gray4[]       = "#eeeeee";
-static const char col_cyan[]        = "#005577";
+/* static const char col_gray1[]       = "#222222"; */
+/* static const char col_gray2[]       = "#444444"; */
+/* static const char col_gray3[]       = "#bbbbbb"; */
+/* static const char col_gray4[]       = "#eeeeee"; */
+/* static const char col_cyan[]        = "#005577"; */
+
+static const char bright_gold[] = "#f4d897";
+static const char darkish_gray[] = "#4b4237";
+static const char darker_gray[] = "#2b1217";
+static const char bright_gray[] = "#ede7d9";
+
 static const char *colors[][3]      = {
 	/*               fg         bg         border   */
-	[SchemeNorm] = { col_gray3, col_gray1, col_gray2 },
-	[SchemeSel]  = { col_gray4, col_cyan,  col_cyan  },
+	[SchemeNorm] = { darker_gray, darkish_gray, darkish_gray },
+	[SchemeSel]  = { bright_gray, bright_gold,  bright_gold  },
 };
 
 /* tagging */
@@ -50,7 +56,7 @@ static const Layout layouts[] = {
 };
 
 /* key definitions */
-#define MODKEY Mod1Mask
+#define MODKEY Mod4Mask
 #define TAGKEYS(KEY,TAG) \
 	{ MODKEY,                       KEY,      view,           {.ui = 1 << TAG} }, \
 	{ MODKEY|ControlMask,           KEY,      toggleview,     {.ui = 1 << TAG} }, \
@@ -62,7 +68,7 @@ static const Layout layouts[] = {
 
 /* commands */
 static char dmenumon[2] = "0"; /* component of dmenucmd, manipulated in spawn() */
-static const char *dmenucmd[] = { "dmenu_run", "-m", dmenumon, "-fn", dmenufont, "-nb", col_gray1, "-nf", col_gray3, "-sb", col_cyan, "-sf", col_gray4, NULL };
+/* static const char *dmenucmd[] = { "dmenu_run", "-m", dmenumon, "-fn", dmenufont, "-nb", col_gray1, "-nf", col_gray3, "-sb", col_cyan, "-sf", col_gray4, NULL }; */
 static const char *roficmd[] = { "rofi", "-show", "run", "-theme", "~/.config/rofi/style.rasi" };
 static const char *termcmd[] = { "alacritty", NULL };
 
