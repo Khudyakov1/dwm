@@ -13,13 +13,25 @@ static const int topbar             = 1;        /* 0 means bottom bar */
 static const int vertpad            = 20;       /* vertical padding of bar */
 static const int sidepad            = 20;       /* horizontal padding of bar */
 static const int focusonwheel       = 0;
-static const char *fonts[]          = { "monospace:size=10" };
+static const char *fonts[]          = { "SourceCodePro:size=15" };
 static const char dmenufont[]       = "monospace:size=10";
 /* static const char col_gray1[]       = "#222222"; */
 /* static const char col_gray2[]       = "#444444"; */
 /* static const char col_gray3[]       = "#bbbbbb"; */
 /* static const char col_gray4[]       = "#eeeeee"; */
 /* static const char col_cyan[]        = "#005577"; */
+
+static const char * const sunset_palette[] = {
+	"#e4907f",
+	"#461120",
+	"#fbd29c",
+	"#853339",
+	"#a6493c",
+	"#2b2237",
+	"#403158"
+};
+
+#define SELECTED_PALETTE sunset_palette
 
 static const char bright_gold[] = "#f4d897";
 static const char darkish_gray[] = "#4b4237";
@@ -28,9 +40,10 @@ static const char bright_gray[] = "#ede7d9";
 
 static const char *colors[][3]      = {
 	/*               fg         bg         border   */
-	[SchemeNorm] = { darker_gray, darkish_gray, darkish_gray },
-	[SchemeSel]  = { bright_gray, bright_gold,  bright_gold  },
-	[SchemeHid]  = { bright_gold,  darker_gray, bright_gold  },
+	[SchemeNorm] = { SELECTED_PALETTE[0], SELECTED_PALETTE[5], SELECTED_PALETTE[5] },
+	[SchemeSel]  = { SELECTED_PALETTE[4], SELECTED_PALETTE[2], SELECTED_PALETTE[2] },
+	[SchemeHid]  = { SELECTED_PALETTE[3], SELECTED_PALETTE[2], SELECTED_PALETTE[3] },
+	[SelectedMon] = { SELECTED_PALETTE[0], SELECTED_PALETTE[6], SELECTED_PALETTE[6] }
 };
 
 /* tagging */
@@ -51,6 +64,11 @@ static const float mfact     = 0.55; /* factor of master area size [0.05..0.95] 
 static const int nmaster     = 1;    /* number of clients in master area */
 static const int resizehints = 1;    /* 1 means respect size hints in tiled resizals */
 static const int lockfullscreen = 1; /* 1 will force focus on the fullscreen window */
+
+static const int lpm[] = {
+        /* Index of preferred layout], if LENGTH(lpm)<#monitors -> default layout */
+        0, 0, 3,
+};
 
 static const Layout layouts[] = {
 	/* symbol     arrange function */

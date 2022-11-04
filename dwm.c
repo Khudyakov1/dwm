@@ -28,6 +28,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <time.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <X11/cursorfont.h>
@@ -60,7 +61,7 @@
 
 /* enums */
 enum { CurNormal, CurResize, CurMove, CurLast }; /* cursor */
-enum { SchemeNorm, SchemeSel, SchemeHid }; /* color schemes */
+enum { SchemeNorm, SchemeSel, SchemeHid, SelectedMon }; /* color schemes */
 enum { NetSupported, NetWMName, NetWMState, NetWMCheck,
        NetWMFullscreen, NetActiveWindow, NetWMWindowType,
        NetWMWindowTypeDialog, NetClientList, NetLast }; /* EWMH atoms */
@@ -150,6 +151,7 @@ typedef struct {
 } Rule;
 
 /* function declarations */
+static void applydefaultlayouts();
 static void applyrules(Client *c);
 static int applysizehints(Client *c, int *x, int *y, int *w, int *h, int interact);
 static void arrange(Monitor *m);
@@ -298,6 +300,21 @@ static Window root, wmcheckwin;
 struct NumTags { char limitexceeded[LENGTH(tags) > 31 ? -1 : 1]; };
 
 /* function implementations */
+void
+applydefaultlayouts()
+{
+    Monitor *m;
+    int i = 0;
+    for (m = mons; m; m = m->next) {
+        if (i < LENGTH(lpm)) {
+            m->lt[0] = &layouts[lpm[i]];
+            m->lt[1] = &layouts[(lpm[i] + 1) % LENGTH(layouts)];
+            strncpy(m->ltsymbol, layouts[i].symbol, sizeof m->ltsymbol);
+        }
+        i++;
+    }
+}
+
 void
 applyrules(Client *c)
 {
@@ -695,6 +712,8 @@ createmon(void)
 	m->gappoh = gappoh;
 	m->gappov = gappov;
 	m->lt[0] = &layouts[0];
+	/* if (m->mh > m->mw) */
+		m->lt[0] = &layouts[3];
 	m->lt[1] = &layouts[1 % LENGTH(layouts)];
 	strncpy(m->ltsymbol, layouts[0].symbol, sizeof m->ltsymbol);
 	return m;
@@ -749,6 +768,13 @@ dirtomon(int dir)
 }
 
 void
+writetime(char *string, int lim, time_t *time_tptr)
+{
+	struct tm *timeptr = localtime(time_tptr);
+	snprintf(string, lim, "%.2d:%.2d", timeptr->tm_hour, timeptr->tm_min);
+}
+
+void
 drawbar(Monitor *m)
 {
 	int x, w, tw = 0, n = 0, scm;
@@ -763,7 +789,11 @@ drawbar(Monitor *m)
 
 	/* draw status first so it can be overdrawn by tags later */
 	if (m == selmon) { /* status is only drawn on selected monitor */
-		drw_setscheme(drw, scheme[SchemeNorm]);
+		drw_setscheme(drw, scheme[SelectedMon]);
+		/* time_t rawtime; */
+		/* time(&rawtime); */
+		/* writetime(stext, sizeof(stext), &rawtime); */
+		strcpy(stext, "Current time");
 		tw = TEXTW(stext) - lrpad + 2; /* 2px right padding */
 		drw_text(drw, m->ww - sw - 2 * sp, 0, sw, bh, 0, stext, 0);
 	}
@@ -2105,6 +2135,7 @@ updategeom(void)
 				selmon = mons;
 			cleanupmon(m);
 		}
+        applydefaultlayouts();
 		free(unique);
 	} else
 #endif /* XINERAMA */
