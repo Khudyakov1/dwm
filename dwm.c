@@ -251,6 +251,10 @@ static int xerror(Display *dpy, XErrorEvent *ee);
 static int xerrordummy(Display *dpy, XErrorEvent *ee);
 static int xerrorstart(Display *dpy, XErrorEvent *ee);
 static void zoom(const Arg *arg);
+static void getgaps(Monitor *m, int *oh, int *ov, int *ih, int *iv, unsigned int *nc);
+static void getfacts(Monitor *m, int msize, int ssize, float *mf, float *sf, int *mr, int *sr);
+static void bstack(Monitor *m);
+static void bstackhoriz(Monitor *m);
 
 /* variables */
 static const char broken[] = "broken";
@@ -289,6 +293,7 @@ static Display *dpy;
 static Drw *drw;
 static Monitor *mons, *selmon;
 static Window root, wmcheckwin;
+
 
 /* configuration, allows nested code to access above variables */
 #include "config.h"
@@ -2358,3 +2363,198 @@ main(int argc, char *argv[])
 	XCloseDisplay(dpy);
 	return EXIT_SUCCESS;
 }
+
+/* Using vanitygaps functions instead of default layouts */
+
+void
+getfacts(Monitor *m, int msize, int ssize, float *mf, float *sf, int *mr, int *sr)
+{
+	unsigned int n;
+	float mfacts, sfacts;
+	int mtotal = 0, stotal = 0;
+	Client *c;
+
+	for (n = 0, c = nexttiled(m->clients); c; c = nexttiled(c->next), n++);
+	mfacts = MIN(n, m->nmaster);
+	sfacts = n - m->nmaster;
+
+	for (n = 0, c = nexttiled(m->clients); c; c = nexttiled(c->next), n++)
+		if (n < m->nmaster)
+			mtotal += msize / mfacts;
+		else
+			stotal += ssize / sfacts;
+
+	*mf = mfacts; // total factor of master area
+	*sf = sfacts; // total factor of stack area
+	*mr = msize - mtotal; // the remainder (rest) of pixels after an even master split
+	*sr = ssize - stotal; // the remainder (rest) of pixels after an even stack split
+}
+
+void
+getgaps(Monitor *m, int *oh, int *ov, int *ih, int *iv, unsigned int *nc)
+{
+	unsigned int n, oe, ie;
+	#if PERTAG_PATCH
+	oe = ie = selmon->pertag->enablegaps[selmon->pertag->curtag];
+	#else
+	oe = ie = enablegaps;
+	#endif // PERTAG_PATCH
+	Client *c;
+
+	for (n = 0, c = nexttiled(m->clients); c; c = nexttiled(c->next), n++);
+	if (smartgaps && n == 1) {
+		oe = 0; // outer gaps disabled when only one client
+	}
+
+	*oh = m->gappoh*oe; // outer horizontal gap
+	*ov = m->gappov*oe; // outer vertical gap
+	*ih = m->gappih*ie; // inner horizontal gap
+	*iv = m->gappiv*ie; // inner vertical gap
+	*nc = n;            // number of clients
+}
+
+static void
+bstack(Monitor *m)
+{
+	unsigned int i, n;
+	int oh, ov, ih, iv;
+	int mx = 0, my = 0, mh = 0, mw = 0;
+	int sx = 0, sy = 0, sh = 0, sw = 0;
+	float mfacts, sfacts;
+	int mrest, srest;
+	Client *c;
+
+	getgaps(m, &oh, &ov, &ih, &iv, &n);
+	if (n == 0)
+		return;
+
+	sx = mx = m->wx + ov;
+	sy = my = m->wy + oh;
+	sh = mh = m->wh - 2*oh;
+	mw = m->ww - 2*ov - iv * (MIN(n, m->nmaster) - 1);
+	sw = m->ww - 2*ov - iv * (n - m->nmaster - 1);
+
+	if (m->nmaster && n > m->nmaster) {
+		sh = (mh - ih) * (1 - m->mfact);
+		mh = mh - ih - sh;
+		sx = mx;
+		sy = my + mh + ih;
+	}
+
+	getfacts(m, mw, sw, &mfacts, &sfacts, &mrest, &srest);
+
+	for (i = 0, c = nexttiled(m->clients); c; c = nexttiled(c->next), i++) {
+		if (i < m->nmaster) {
+			resize(c, mx, my, (mw / mfacts) + (i < mrest ? 1 : 0) - (2*c->bw), mh - (2*c->bw), 0);
+			mx += WIDTH(c) + iv;
+		} else {
+			resize(c, sx, sy, (sw / sfacts) + ((i - m->nmaster) < srest ? 1 : 0) - (2*c->bw), sh - (2*c->bw), 0);
+			sx += WIDTH(c) + iv;
+		}
+	}
+}
+
+static void
+bstackhoriz(Monitor *m)
+{
+	unsigned int i, n;
+	int oh, ov, ih, iv;
+	int mx = 0, my = 0, mh = 0, mw = 0;
+	int sx = 0, sy = 0, sh = 0, sw = 0;
+	float mfacts, sfacts;
+	int mrest, srest;
+	Client *c;
+
+	getgaps(m, &oh, &ov, &ih, &iv, &n);
+	if (n == 0)
+		return;
+
+	sx = mx = m->wx + ov;
+	sy = my = m->wy + oh;
+	mh = m->wh - 2*oh;
+	sh = m->wh - 2*oh - ih * (n - m->nmaster - 1);
+	mw = m->ww - 2*ov - iv * (MIN(n, m->nmaster) - 1);
+	sw = m->ww - 2*ov;
+
+	if (m->nmaster && n > m->nmaster) {
+		sh = (mh - ih) * (1 - m->mfact);
+		mh = mh - ih - sh;
+		sy = my + mh + ih;
+		sh = m->wh - mh - 2*oh - ih * (n - m->nmaster);
+	}
+
+	getfacts(m, mw, sh, &mfacts, &sfacts, &mrest, &srest);
+
+	for (i = 0, c = nexttiled(m->clients); c; c = nexttiled(c->next), i++) {
+		if (i < m->nmaster) {
+			resize(c, mx, my, (mw / mfacts) + (i < mrest ? 1 : 0) - (2*c->bw), mh - (2*c->bw), 0);
+			mx += WIDTH(c) + iv;
+		} else {
+			resize(c, sx, sy, sw - (2*c->bw), (sh / sfacts) + ((i - m->nmaster) < srest ? 1 : 0) - (2*c->bw), 0);
+			sy += HEIGHT(c) + ih;
+		}
+	}
+}
+
+
+/* static void */
+/* bstack(Monitor *m) { */
+/* 	int w, h, mh, mx, tx, ty, tw; */
+/* 	unsigned int i, n; */
+/* 	Client *c; */
+
+/* 	for (n = 0, c = nexttiled(m->clients); c; c = nexttiled(c->next), n++); */
+/* 	if (n == 0) */
+/* 		return; */
+/* 	if (n > m->nmaster) { */
+/* 		mh = m->nmaster ? m->mfact * m->wh : 0; */
+/* 		tw = m->ww / (n - m->nmaster); */
+/* 		ty = m->wy + mh; */
+/* 	} else { */
+/* 		mh = m->wh; */
+/* 		tw = m->ww; */
+/* 		ty = m->wy; */
+/* 	} */
+/* 	for (i = mx = 0, tx = m->wx, c = nexttiled(m->clients); c; c = nexttiled(c->next), i++) { */
+/* 		if (i < m->nmaster) { */
+/* 			w = (m->ww - mx) / (MIN(n, m->nmaster) - i); */
+/* 			resize(c, m->wx + mx, m->wy, w - (2 * c->bw), mh - (2 * c->bw), 0); */
+/* 			mx += WIDTH(c); */
+/* 		} else { */
+/* 			h = m->wh - mh; */
+/* 			resize(c, tx, ty, tw - (2 * c->bw), h - (2 * c->bw), 0); */
+/* 			if (tw != m->ww) */
+/* 				tx += WIDTH(c); */
+/* 		} */
+/* 	} */
+/* } */
+
+/* static void */
+/* bstackhoriz(Monitor *m) { */
+/* 	int w, mh, mx, tx, ty, th; */
+/* 	unsigned int i, n; */
+/* 	Client *c; */
+
+/* 	for (n = 0, c = nexttiled(m->clients); c; c = nexttiled(c->next), n++); */
+/* 	if (n == 0) */
+/* 		return; */
+/* 	if (n > m->nmaster) { */
+/* 		mh = m->nmaster ? m->mfact * m->wh : 0; */
+/* 		th = (m->wh - mh) / (n - m->nmaster); */
+/* 		ty = m->wy + mh; */
+/* 	} else { */
+/* 		th = mh = m->wh; */
+/* 		ty = m->wy; */
+/* 	} */
+/* 	for (i = mx = 0, tx = m->wx, c = nexttiled(m->clients); c; c = nexttiled(c->next), i++) { */
+/* 		if (i < m->nmaster) { */
+/* 			w = (m->ww - mx) / (MIN(n, m->nmaster) - i); */
+/* 			resize(c, m->wx + mx, m->wy, w - (2 * c->bw), mh - (2 * c->bw), 0); */
+/* 			mx += WIDTH(c); */
+/* 		} else { */
+/* 			resize(c, tx, ty, m->ww - (2 * c->bw), th - (2 * c->bw), 0); */
+/* 			if (th != m->wh) */
+/* 				ty += HEIGHT(c); */
+/* 		} */
+/* 	} */
+/* } */
