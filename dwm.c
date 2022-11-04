@@ -788,15 +788,16 @@ drawbar(Monitor *m)
 	
 
 	/* draw status first so it can be overdrawn by tags later */
-	if (m == selmon) { /* status is only drawn on selected monitor */
-		drw_setscheme(drw, scheme[SelectedMon]);
-		/* time_t rawtime; */
-		/* time(&rawtime); */
-		/* writetime(stext, sizeof(stext), &rawtime); */
-		strcpy(stext, "Current time");
-		tw = TEXTW(stext) - lrpad + 2; /* 2px right padding */
-		drw_text(drw, m->ww - sw - 2 * sp, 0, sw, bh, 0, stext, 0);
-	}
+	/* if (m == selmon) { /1* status is only drawn on selected monitor *1/ */
+	/* 	drw_setscheme(drw, scheme[SelectedMon]); */
+	/* 	drw_rect(drw, 10, 10, 2000, 2000, 1, 1); */
+	/* 	/1* time_t rawtime; *1/ */
+	/* 	/1* time(&rawtime); *1/ */
+	/* 	/1* writetime(stext, sizeof(stext), &rawtime); *1/ */
+	/* 	strcpy(stext, "Current time"); */
+	/* 	tw = TEXTW(stext) - lrpad + 2; /1* 2px right padding *1/ */
+	/* 	drw_text(drw, m->ww - sw - 2 * sp, 0, sw, bh, 0, stext, 0); */
+	/* } */
 
 	for (c = m->clients; c; c = c->next) {
 		if (ISVISIBLE(c))
@@ -811,7 +812,7 @@ drawbar(Monitor *m)
 		if(!(occ & 1 << i || m->tagset[m->seltags] & 1 << i))
 			continue;
 		w = TEXTW(tags[i]);
-		drw_setscheme(drw, scheme[m->tagset[m->seltags] & 1 << i ? SchemeSel : SchemeNorm]);
+		drw_setscheme(drw, scheme[(m->tagset[m->seltags] & 1 << i) && m == selmon ? SchemeSel : SchemeNorm]);
 		drw_text(drw, x, 0, w, bh, lrpad / 2, tags[i], urg & 1 << i);
 		x += w;
 	}
