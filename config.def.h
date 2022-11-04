@@ -1,7 +1,7 @@
 /* See LICENSE file for copyright and license details. */
 
 /* appearance */
-static const unsigned int borderpx  = 2;        /* border pixel of windows */
+static const unsigned int borderpx  = 3;        /* border pixel of windows */
 static const unsigned int snap      = 32;       /* snap pixel */
 static const unsigned int gappih    = 20;       /* horiz inner gap between windows */
 static const unsigned int gappiv    = 20;       /* vert inner gap between windows */
@@ -75,13 +75,27 @@ static const Layout layouts[] = {
 /* commands */
 static char dmenumon[2] = "0"; /* component of dmenucmd, manipulated in spawn() */
 /* static const char *dmenucmd[] = { "dmenu_run", "-m", dmenumon, "-fn", dmenufont, "-nb", col_gray1, "-nf", col_gray3, "-sb", col_cyan, "-sf", col_gray4, NULL }; */
-static const char *roficmd[] = { "rofi", "-show", "run", "-theme", "~/.config/rofi/style.rasi" };
+static const char *roficmd[] = { "rofi", "-show", "run", "-theme", "~/.config/rofi/style.rasi", NULL };
 static const char *termcmd[] = { "alacritty", NULL };
+
+/* Multimedia controls */
+static const char *pausetrack[] = { "playerctl", "play-pause", NULL };
+static const char *nexttrack[] = { "playerctl", "next", NULL };
+static const char *prevtrack[] = { "playerctl", "previous", NULL };
+
+/* Brightness control keys */
+static const char *brightnessup[] = { "brightnessctl", "s", "+10%", NULL };
+static const char *brightnessdown[] = { "brightnessctl", "s", "10%-", NULL };
+
+/* Saving screenshots to clipboard */
+static const char screenshottoclipboard[] = "maim --select | xclip -selection clipboard -t image/png";
+
+#include <X11/XF86keysym.h>
 
 static const Key keys[] = {
 	/* modifier                     key        function        argument */
 	{ MODKEY,                       XK_p,      spawn,          {.v = roficmd } },
-	{ MODKEY|ShiftMask,             XK_Return, spawn,          {.v = termcmd } },
+	{ MODKEY,					    XK_Return, spawn,          {.v = termcmd } },
 	{ MODKEY,                       XK_b,      togglebar,      {0} },
 	{ MODKEY,                       XK_j,      focusstackvis,  {.i = +1 } },
 	{ MODKEY,                       XK_k,      focusstackvis,  {.i = -1 } },
@@ -91,7 +105,7 @@ static const Key keys[] = {
 	{ MODKEY,                       XK_d,      incnmaster,     {.i = -1 } },
 	{ MODKEY,                       XK_h,      setmfact,       {.f = -0.05} },
 	{ MODKEY,                       XK_l,      setmfact,       {.f = +0.05} },
-	{ MODKEY,                       XK_Return, zoom,           {0} },
+	{ MODKEY|ShiftMask,             XK_Return, zoom,           {0} },
 	{ MODKEY,                       XK_Tab,    view,           {0} },
 	{ MODKEY|ShiftMask,             XK_c,      killclient,     {0} },
 	{ MODKEY,                       XK_t,      setlayout,      {.v = &layouts[0]} },
@@ -107,9 +121,15 @@ static const Key keys[] = {
 	{ MODKEY,                       XK_period, focusmon,       {.i = +1 } },
 	{ MODKEY|ShiftMask,             XK_comma,  tagmon,         {.i = -1 } },
 	{ MODKEY|ShiftMask,             XK_period, tagmon,         {.i = +1 } },
-	{ MODKEY,                       XK_s,      show,           {0} },
-	{ MODKEY|ShiftMask,             XK_s,      showall,        {0} },
+	/* { MODKEY,                       XK_s,      show,           {0} }, */
+	{ MODKEY,             XK_s,      showall,        {0} },
 	{ MODKEY|ShiftMask,             XK_h,      hide,           {0} },
+	{ 0,				XF86XK_AudioPlay,      spawn,          {.v = pausetrack} },
+	{ 0,				XF86XK_AudioNext,      spawn,          {.v = nexttrack} },
+	{ 0,				XF86XK_AudioPrev,      spawn,          {.v = prevtrack} },
+	{ 0,				XF86XK_MonBrightnessUp,      spawn,          {.v = brightnessup} },
+	{ 0,				XF86XK_MonBrightnessDown,      spawn,          {.v = brightnessdown} },
+	{ MODKEY|ShiftMask,             XK_s,      spawn,		   SHCMD(screenshottoclipboard) },
 	TAGKEYS(                        XK_1,                      0)
 	TAGKEYS(                        XK_2,                      1)
 	TAGKEYS(                        XK_3,                      2)
