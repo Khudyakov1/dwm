@@ -58,6 +58,7 @@ static const Rule rules[] = {
 	/* class      instance    title       tags mask     isfloating   monitor */
 	{ "Gimp",     NULL,       NULL,       0,            1,           -1 },
 	{ "Firefox",  NULL,       NULL,       1 << 8,       0,           -1 },
+	{ "Alacritty",  NULL,  "Note editor", 0,	        1,           -1 },
 };
 
 /* layout(s) */
@@ -96,6 +97,9 @@ static char dmenumon[2] = "0"; /* component of dmenucmd, manipulated in spawn() 
 /* static const char *dmenucmd[] = { "dmenu_run", "-m", dmenumon, "-fn", dmenufont, "-nb", col_gray1, "-nf", col_gray3, "-sb", col_cyan, "-sf", col_gray4, NULL }; */
 static const char *roficmd[] = { "rofi", "-show", "run", "-theme", "~/.config/rofi/style.rasi", NULL };
 static const char *termcmd[] = { "alacritty", NULL };
+
+static const char takenote[] = "~/.config/scripts/takenote.sh";
+static const char opennote[] = "~/.config/scripts/opennote.sh";
 
 /* Multimedia controls */
 static const char *pausetrack[] = { "playerctl", "play-pause", NULL };
@@ -149,6 +153,8 @@ static const Key keys[] = {
 	{ 0,				XF86XK_MonBrightnessUp,      spawn,          {.v = brightnessup} },
 	{ 0,				XF86XK_MonBrightnessDown,      spawn,          {.v = brightnessdown} },
 	{ MODKEY|ShiftMask,             XK_s,      spawn,		   SHCMD(screenshottoclipboard) },
+	{ MODKEY,			            XK_n,      spawn,		   SHCMD(takenote) },
+	{ MODKEY|ShiftMask,             XK_n,      spawn,		   SHCMD(opennote) },
 	TAGKEYS(                        XK_1,                      0)
 	TAGKEYS(                        XK_2,                      1)
 	TAGKEYS(                        XK_3,                      2)
