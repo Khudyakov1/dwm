@@ -1,4 +1,4 @@
-/* See LICENSE file for copyright and license details.
+/* See LICENSE file for copyright and license details.dwm.c
  *
  * dynamic window manager is designed like any other X client as well. It is
  * driven through handling X events. In contrast to other X clients, a window
@@ -217,6 +217,7 @@ static void setlayout(const Arg *arg);
 static void setmfact(const Arg *arg);
 static void setup(void);
 static void seturgent(Client *c, int urg);
+static void shiftviewclients(const Arg *arg);
 static void show(const Arg *arg);
 static void showall(const Arg *arg);
 static void showwin(Client *c);
@@ -229,6 +230,7 @@ static void tile(Monitor *m);
 static void togglebar(const Arg *arg);
 static void togglefloating(const Arg *arg);
 static void toggletag(const Arg *arg);
+static void gotocleartag(Arg *arg);
 static void toggleview(const Arg *arg);
 static void togglewin(const Arg *arg);
 static void unfocus(Client *c, int setfocus);
@@ -457,6 +459,27 @@ attachstack(Client *c)
 {
 	c->snext = c->mon->stack;
 	c->mon->stack = c;
+}
+
+void
+gotocleartag(Arg *arg)
+{
+	Client *c;
+	Monitor *m = selmon;
+	unsigned int occ = 0;
+	Arg tmp;
+	unsigned i = 1;
+	/* Getting the list of the tags in use */
+	for (c = m->clients; c; c = c->next)
+		occ |= c->tags;
+	/* Finding the first one not in use */
+	/* Iterating until prelast tag in case there are no free tags */
+	for (i = 0; i < LENGTH(tags) - 1; i++) 
+		if(!(occ & 1 << i))
+			break;
+	/* Switching to the empty tag */
+	tmp.ui = 1 << i;
+	view(&tmp);
 }
 
 void
@@ -2514,65 +2537,43 @@ bstackhoriz(Monitor *m)
 	}
 }
 
+void
+shiftviewclients(const Arg *arg)
+{
+	Arg shifted;
+	Client *c;
+	unsigned int tagmask = 0;
 
-/* static void */
-/* bstack(Monitor *m) { */
-/* 	int w, h, mh, mx, tx, ty, tw; */
-/* 	unsigned int i, n; */
-/* 	Client *c; */
+	for (c = selmon->clients; c; c = c->next)
+		#if SCRATCHPADS_PATCH
+		if (!(c->tags & SPTAGMASK))
+			tagmask = tagmask | c->tags;
+		#else
+		tagmask = tagmask | c->tags;
+		#endif // SCRATCHPADS_PATCH
 
-/* 	for (n = 0, c = nexttiled(m->clients); c; c = nexttiled(c->next), n++); */
-/* 	if (n == 0) */
-/* 		return; */
-/* 	if (n > m->nmaster) { */
-/* 		mh = m->nmaster ? m->mfact * m->wh : 0; */
-/* 		tw = m->ww / (n - m->nmaster); */
-/* 		ty = m->wy + mh; */
-/* 	} else { */
-/* 		mh = m->wh; */
-/* 		tw = m->ww; */
-/* 		ty = m->wy; */
-/* 	} */
-/* 	for (i = mx = 0, tx = m->wx, c = nexttiled(m->clients); c; c = nexttiled(c->next), i++) { */
-/* 		if (i < m->nmaster) { */
-/* 			w = (m->ww - mx) / (MIN(n, m->nmaster) - i); */
-/* 			resize(c, m->wx + mx, m->wy, w - (2 * c->bw), mh - (2 * c->bw), 0); */
-/* 			mx += WIDTH(c); */
-/* 		} else { */
-/* 			h = m->wh - mh; */
-/* 			resize(c, tx, ty, tw - (2 * c->bw), h - (2 * c->bw), 0); */
-/* 			if (tw != m->ww) */
-/* 				tx += WIDTH(c); */
-/* 		} */
-/* 	} */
-/* } */
+	#if SCRATCHPADS_PATCH
+	shifted.ui = selmon->tagset[selmon->seltags] & ~SPTAGMASK;
+	#else
+	shifted.ui = selmon->tagset[selmon->seltags];
+	#endif // SCRATCHPADS_PATCH
+	if (arg->i > 0) // left circular shift
+		do {
+			shifted.ui = (shifted.ui << arg->i)
+			   | (shifted.ui >> (LENGTH(tags) - arg->i));
+			#if SCRATCHPADS_PATCH
+			shifted.ui &= ~SPTAGMASK;
+			#endif // SCRATCHPADS_PATCH
+		} while (tagmask && !(shifted.ui & tagmask));
+	else // right circular shift
+		do {
+			shifted.ui = (shifted.ui >> (- arg->i)
+			   | shifted.ui << (LENGTH(tags) + arg->i));
+			#if SCRATCHPADS_PATCH
+			shifted.ui &= ~SPTAGMASK;
+			#endif // SCRATCHPADS_PATCH
+		} while (tagmask && !(shifted.ui & tagmask));
 
-/* static void */
-/* bstackhoriz(Monitor *m) { */
-/* 	int w, mh, mx, tx, ty, th; */
-/* 	unsigned int i, n; */
-/* 	Client *c; */
+	view(&shifted);
+}
 
-/* 	for (n = 0, c = nexttiled(m->clients); c; c = nexttiled(c->next), n++); */
-/* 	if (n == 0) */
-/* 		return; */
-/* 	if (n > m->nmaster) { */
-/* 		mh = m->nmaster ? m->mfact * m->wh : 0; */
-/* 		th = (m->wh - mh) / (n - m->nmaster); */
-/* 		ty = m->wy + mh; */
-/* 	} else { */
-/* 		th = mh = m->wh; */
-/* 		ty = m->wy; */
-/* 	} */
-/* 	for (i = mx = 0, tx = m->wx, c = nexttiled(m->clients); c; c = nexttiled(c->next), i++) { */
-/* 		if (i < m->nmaster) { */
-/* 			w = (m->ww - mx) / (MIN(n, m->nmaster) - i); */
-/* 			resize(c, m->wx + mx, m->wy, w - (2 * c->bw), mh - (2 * c->bw), 0); */
-/* 			mx += WIDTH(c); */
-/* 		} else { */
-/* 			resize(c, tx, ty, m->ww - (2 * c->bw), th - (2 * c->bw), 0); */
-/* 			if (th != m->wh) */
-/* 				ty += HEIGHT(c); */
-/* 		} */
-/* 	} */
-/* } */
