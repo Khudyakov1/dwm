@@ -870,6 +870,15 @@ drawbar(Monitor *m)
 			drw_setscheme(drw, scheme[SchemeNorm]);
 			drw_rect(drw, x, 0, w - 2 * sp, bh, 1, 1);
 		}
+
+		// Print time on to the bar
+		drw_setscheme(drw, scheme[m == selmon ? SchemeSel : SchemeNorm]);
+		time_t ltime;
+		time(&ltime);
+		char buffer[256];
+		snprintf(buffer, 256, "%s", ctime(&ltime));
+		buffer[16] = 0;
+		drw_text(drw, x - 110, 0, 110, bh, lrpad / 2, buffer + 10, 0);
 	}
 	m->bt = n;
 	m->btw = w;
