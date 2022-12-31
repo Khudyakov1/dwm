@@ -1,7 +1,7 @@
 /* See LICENSE file for copyright and license details. */
 
 /* appearance */
-static const unsigned int borderpx  = 3;        /* border pixel of windows */
+static const unsigned int borderpx  = 1;        /* border pixel of windows */
 static const unsigned int snap      = 32;       /* snap pixel */
 static const unsigned int gappih    = 20;       /* horiz inner gap between windows */
 static const unsigned int gappiv    = 20;       /* vert inner gap between windows */
@@ -32,7 +32,27 @@ static const char * const sunset_palette[] = {
 	"#403158"
 };
 
-#define SELECTED_PALETTE sunset_palette
+static const char * const purple_palette[] = {
+	"#884b64",
+	"#3b343c",
+	"#cb608b",
+	"#4f4854",
+	"#5b3e53",
+	"#2b2237",
+	"#8c8c8d"
+};
+
+static const char * const monochrome_palette[] = {
+	"#dddddd",
+	"#3b343c",
+	"#dddddd",
+	"#1f1814",
+	"#080808",
+	"#080808",
+	"#8c8c8d"
+};
+
+#define SELECTED_PALETTE monochrome_palette
 
 static const char bright_gold[] = "#f4d897";
 static const char darkish_gray[] = "#4b4237";
@@ -44,7 +64,7 @@ static const char *colors[][3]      = {
 	[SchemeNorm] = { SELECTED_PALETTE[0], SELECTED_PALETTE[5], SELECTED_PALETTE[5] },
 	[SchemeSel]  = { SELECTED_PALETTE[4], SELECTED_PALETTE[2], SELECTED_PALETTE[2] },
 	[SchemeHid]  = { SELECTED_PALETTE[3], SELECTED_PALETTE[2], SELECTED_PALETTE[3] },
-	[SelectedMon] = { SELECTED_PALETTE[0], SELECTED_PALETTE[6], SELECTED_PALETTE[6] }
+	[SelectedMon] = { SELECTED_PALETTE[4], SELECTED_PALETTE[6], SELECTED_PALETTE[6] }
 };
 
 /* tagging */
@@ -56,7 +76,7 @@ static const Rule rules[] = {
 	 *	WM_NAME(STRING) = title
 	 */
 	/* class      instance    title       tags mask     isfloating   monitor */
-	{ "Gimp",     NULL,       NULL,       0,            1,           -1 },
+	/* { "Gimp",     NULL,       NULL,       0,            1,           -1 }, */
 	{ "Firefox",  NULL,       NULL,       1 << 8,       0,           -1 },
 	{ "Alacritty",  NULL,  "Note editor", 0,	        1,           -1 },
 };
@@ -95,7 +115,7 @@ static const Layout layouts[] = {
 /* commands */
 static char dmenumon[2] = "0"; /* component of dmenucmd, manipulated in spawn() */
 /* static const char *dmenucmd[] = { "dmenu_run", "-m", dmenumon, "-fn", dmenufont, "-nb", col_gray1, "-nf", col_gray3, "-sb", col_cyan, "-sf", col_gray4, NULL }; */
-static const char *roficmd[] = { "rofi", "-show", "run", "-theme", "~/.config/rofi/style.rasi", NULL };
+static const char *roficmd[] = { "rofi", "-show", "run", "-theme", "~/.config/rofi/style.rasi", "-monitor", "-4" ,NULL };
 static const char *termcmd[] = { "alacritty", NULL };
 
 static const char takenote[] = "~/.config/scripts/takenote.sh";
@@ -117,7 +137,7 @@ static const char screenshottoclipboard[] = "maim --select | xclip -selection cl
 
 static const Key keys[] = {
 	/* modifier                     key        function        argument */
-	{ MODKEY,                       XK_p,      spawn,          {.v = roficmd } },
+	{ MODKEY,                       XK_p,      spawn,		   {.v = roficmd} },
 	{ MODKEY,					    XK_Return, spawn,          {.v = termcmd } },
 	{ MODKEY,                       XK_b,      togglebar,      {0} },
 	{ MODKEY,                       XK_j,      focusstackvis,  {.i = +1 } },
